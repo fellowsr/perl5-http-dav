@@ -6,7 +6,7 @@ use strict;
 use vars qw($VERSION $VERSION_DATE $DEBUG);
 
 # Globals
-$VERSION = '0.48';
+$VERSION = '0.48.RT125208';
 $VERSION_DATE = '2015/03/26';
 
 # Set this up to 3
@@ -916,6 +916,8 @@ sub put {
     my ( $self, @p ) = @_;
     my ( $local, $url, $callback, $custom_headers )
         = HTTP::DAV::Utils::rearrange( [ 'LOCAL', 'URL', 'CALLBACK', 'HEADERS' ], @p );
+    use Test::More;
+    note "-local = $local";
 
     if ( ref($local) eq "SCALAR" ) {
     	$self->_start_multi_op( 'put ' . ${$local}, $callback );
@@ -923,7 +925,18 @@ sub put {
     }
     else {
     	$self->_start_multi_op( 'put ' . $local, $callback );
-        $local =~ s/\ /\\ /g;
+
+        ###############################################################
+        # https://rt.cpan.org/Public/Bug/Display.html?id=125208
+        # In line 926 all spaces escaped with '\' symbol, but this don't work on 'MSWin32' platform.
+        # Instead filenames with spaces must be quoted with in pair of ".
+        # (https://support.microsoft.com/en-us/help/102739/long-filenames-or-paths-with-spaces-require-quotation-marks)
+        # Solution like:
+        #  line 926: $local =~ s/\ /\\ /g if $^O ne 'MSWin32';
+        # just work fine.
+        # In my case '-local' parameter quoted explicitly before calling 'put'.
+        ##$local =~ s/\ /\\ /g;
+        $local =~ s#\ #\\ #g if $^O ne 'MSWin32';
         my @globs = glob("$local");
 
         #my @globs=glob("\"$local\"");
