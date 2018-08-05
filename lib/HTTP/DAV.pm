@@ -916,8 +916,6 @@ sub put {
     my ( $self, @p ) = @_;
     my ( $local, $url, $callback, $custom_headers )
         = HTTP::DAV::Utils::rearrange( [ 'LOCAL', 'URL', 'CALLBACK', 'HEADERS' ], @p );
-    use Test::More;
-    note "-local = $local";
 
     if ( ref($local) eq "SCALAR" ) {
     	$self->_start_multi_op( 'put ' . ${$local}, $callback );
