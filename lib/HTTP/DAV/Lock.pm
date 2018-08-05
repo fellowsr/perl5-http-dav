@@ -14,9 +14,17 @@ HTTP::DAV::Lock - Represents a WebDAV Lock.
 
 =head1 SYNOPSIS
 
- Need example
+TODO: Need example
 
 =head1 DESCRIPTION
+
+TODO: Needs description as well.
+
+=head1 CONSTRUCTOR
+
+=head2 new
+
+ my $r=HTTP::DAV::Lock->new();
 
 =cut
 
@@ -39,6 +47,22 @@ sub _init {
 
 =over
 
+=item get_owner
+
+=item get_token
+
+=item get_depth
+
+=item get_timeout
+
+=item get_locktoken
+
+Returns first locktoken, there may be more than one. See L</get_locktokens> for all locktokens.
+
+=item get_locktokens
+
+Returns an array of locktokens.
+
 =cut
 
 # GET
@@ -48,6 +72,26 @@ sub get_depth { $_[0]->{_depth}; }
 sub get_timeout { $_[0]->{_timeout}; }
 sub get_locktoken { $_[0]->{_locktokens}[0]; }
 sub get_locktokens{ $_[0]->{_locktokens}; }
+
+=pod
+
+=item set_scope
+
+=item set_owned
+
+=item set_type
+
+=item set_owner
+
+=item set_depth
+
+=item set_timeout
+
+=item set_locktoken
+
+=cut
+
+
 
 sub set_scope     { $_[0]->{_scope}     = $_[1]; }
 sub set_owned     { $_[0]->{_owned}     = $_[1]; }
@@ -66,7 +110,27 @@ sub set_locktoken {
 }
 
 # IS
+
+=item is_owned
+
+=cut
+
 sub is_owned { $_[0]->{_owned}; }
+
+=item make_lock_xml
+
+Synopsis: 
+
+Full parameters
+
+ $lock->make_lock_xml (
+    -owner => (owner|http://mysite/~mypage/)
+    -timeout => num_of_seconds (e.g. 134123432)
+    -scope => (exclusive|shared)
+    -type =>  (write)
+ )
+
+=cut
 
 ###########################################################################
 # Synopsis: 
@@ -124,6 +188,32 @@ sub make_lock_xml {
    return ($xml_request);
 }
 
+=item XML_lockdiscovery_parse
+
+Synopsis:
+
+ @locks = XML_lockdiscovery_parse($node);
+
+With this XML node:
+
+ <D:lockdiscovery>
+    <D:activelock>
+       <D:locktype><D:write/></D:locktype>
+       <D:lockscope><D:exclusive/></D:lockscope>
+       <D:depth>0</D:depth>
+       <D:timeout>Infinite</D:timeout>
+       <D:owner>pcollins</D:owner>
+       <D:locktoken>
+           <D:href>opaquelocktoken:d3ae67b0-1dd1-a5f7-f067587e98e1</D:href>
+           <D:href>...</D:href>
+       </D:locktoken>
+    </D:activelock>
+ </D:lockdiscovery>
+
+Returns an array of locks (will be more than one in shared locks scenarios)
+
+=cut
+
 ###########################################################################
 # Synopsis: @locks = XML_lockdiscovery_parse($node);
 # With this XML node:
@@ -155,7 +245,7 @@ sub XML_lockdiscovery_parse {
 
       my $lock = HTTP::DAV::Lock->new();
       push(@found_locks,$lock);
-   
+
       my $nodes_lock_params = $node_activelock->getChildNodes();
       next unless $nodes_lock_params;
       my $prop_count = $nodes_lock_params->getLength;
@@ -173,7 +263,7 @@ sub XML_lockdiscovery_parse {
 
          my $lock_prop_name = $node_lock_param->getNodeName();
          $lock_prop_name =~ s/.*:(.*)/$1/g;
-   
+
          # 1. RFC2518 currently only allows locktype of exclusive or shared
          if ( $lock_prop_name eq "lockscope" ) {
             my $node_lock_scope = HTTP::DAV::Utils::get_only_element($node_lock_param);
@@ -181,7 +271,7 @@ sub XML_lockdiscovery_parse {
             $lock_scope =~ s/.*:(.*)/$1/g;
             $lock->set_scope($lock_scope);
          } 
-   
+
          # 2. RFC2518 currently only allows locktype of "write"
          elsif ( $lock_prop_name eq "locktype" ) {
             my $node_lock_type = HTTP::DAV::Utils::get_only_element($node_lock_param);
@@ -227,6 +317,32 @@ sub XML_lockdiscovery_parse {
 
    return @found_locks;
 }
+
+
+=item get_supportedlock_details
+
+Synopsis:
+  $hashref = get_supportedlock_details($node);
+
+ <D:supportedlock>
+    <D:lockentry>
+       <D:lockscope> <D:exclusive/> </D:lockscope>
+       <D:locktype>  <D:write/>     </D:locktype>
+    </D:lockentry>
+    <D:lockentry>
+       <D:lockscope> <D:shared/>    </D:lockscope>
+       <D:locktype>  <D:write/>     </D:locktype>
+    </D:lockentry>
+ </D:supportedlock>
+
+Returns something similar to:
+
+  @supportedlocks'  = (
+    { 'type' => 'write', 'scope' => 'exclusive' },
+    { 'type' => 'write', 'scope' => 'shared'    }
+  );    
+
+=cut
 
 ###########################################################################
 # Synopsis: $hashref = get_supportedlock_details($node);
@@ -288,11 +404,16 @@ sub get_supportedlock_details {
 
 
 ###########################################################################
-=item Timeout
-This parameter can take an absolute or relative timeout.
-The following forms are all valid for the -timeout field:
+
+=item timeout
+
+ $l->timeout( "30s");
+
+This method takes a parameter that can take an absolute or relative timeout.
+The following forms are all valid for the C<timeout> field:
 
 Timeouts in:
+
     300
     30s                              30 seconds from now
     10m                              ten minutes from now
@@ -300,12 +421,15 @@ Timeouts in:
     1d                               tomorrow
     3M                               in three months
     10y                              in ten years time
+
 Timeout at:
+
     2000-02-31 00:40:33              at the indicated time & date
     For more time and date formats that are handled see HTTP::Date
 
 RFC2518 states that the timeout value MUST NOT be greater 
 than 2^32-1. If this occurs it will simply set the timeout to infinity
+
 =cut
 
 sub timeout {
@@ -335,6 +459,10 @@ sub timeout {
       return "Second-$timeoutret ";
    }
 }
+
+=item interpret_timeout
+
+=cut
 
 ###########################################################################
 sub interpret_timeout {
@@ -387,10 +515,16 @@ sub _timeout_calc {
 
 
 ###########################################################################
-=item $r->as_string()
+
+=item as_string
+
+ $r->as_string()
 
 Method returning a textual representation of the request.
-Mainly useful for debugging purposes. It takes no arguments.
+Mainly useful for debugging purposes.
+
+=for DOESNOTMATCHCODE
+It takes no arguments.
 
 =cut
 
@@ -412,6 +546,20 @@ sub as_string
    $str;
 }
 
+=item pretty_print
+
+ $r->pretty_print()
+
+Method returning a textual representation of the request.
+Mainly useful for debugging purposes.
+
+=for DOESNOTMATCHCODE
+It takes no arguments.
+
+An optional scalar string may be provided to indent the returned lines.
+
+=cut
+
 sub pretty_print
 {
    my ($self,$space) = @_;
@@ -428,6 +576,7 @@ sub pretty_print
 
 
 ###########################################################################
+
 =back
 
 =head1 SEE ALSO
