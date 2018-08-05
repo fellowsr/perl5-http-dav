@@ -6,7 +6,7 @@ use strict;
 use vars qw($VERSION $VERSION_DATE $DEBUG);
 
 # Globals
-$VERSION = '0.48.RT123528';
+$VERSION = '0.49';
 $VERSION_DATE = '2018/08/05';
 
 # Set this up to 3
@@ -1771,7 +1771,7 @@ put requires a working resource to be set before being called. See C<open>.
 
 The return value is always 1 or 0 indicating success or failure.
 
-See L<get()> for a description of what the optional callback parameter does.
+See C<get> for a description of what the optional callback parameter does.
 
 You can also pass a C<-headers> argument. That allows one to specify custom HTTP headers. It can be either a hashref with header names and values, or a L<HTTP::Headers> object.
 
@@ -2087,7 +2087,7 @@ This module is Copyright (C) 2001-2008 by
 All rights reserved.
 
 Current co-maintainer of the module is Cosimo Streppone
-for Opera Software ASA, L<opera@cpan.org>.
+for Opera Software ASA, L<opera@cpan.org|mailto:opera@cpan.org>.
 
 You may distribute this module under the terms of either the
 GNU General Public License or the Artistic License,
